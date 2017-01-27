@@ -1,0 +1,146 @@
+
+/*--- BASIC LAYOUT ---------*/
+
+.vertical-child {
+	display : inline-block !important;
+	overflow: hidden;
+}
+
+.horizontal-child {
+	display : inline-block !important;
+	vertical-align: top;
+	overflow: hidden;
+}
+
+.horizontal-child-vcenter {
+	display : inline-block !important;
+	vertical-align: middle;
+	overflow: hidden;
+}
+
+/*--- CONTROL OPTIONS ---------*/
+
+.no-padding {
+	padding: 0 !important;
+}
+
+.no-margin {
+	margin: 0 !important; 
+}
+
+.no-background {
+	background-color:rgba(255,0,0,0) !important;
+}
+
+.scrollable {
+	overflow: auto;
+	-webkit-overflow-scrolling: touch;
+}
+
+
+/*----- DEFAULT DS CONTROL STYLES -------*/
+
+.ds-ui-panel{
+  background: #FFF;
+  border: 1px solid #AAA;
+  box-shadow: 0px 2px 3px 0px #AAA;
+  padding: 0px;
+  margin-top: 0px;
+  margin-right: 7.5px;
+  margin-bottom: 15px;
+  margin-left: 0px;
+  overflow: hidden;
+  border-radius: 3px;
+}
+
+.ds-ui-btn-toggle-on { 
+	background-color: #73AC26 !important; 
+	xcolor: #ffffff !important;
+	xopacity:1 !important; 
+	xborder-color:white !important; 
+}
+
+.ds-ui-btn-toggle-off { 
+	background-color: #8CC63F !important; 
+	xcolor: #8DCF36 !important;
+	xopacity:0.3 !important; 
+	xborder-color:#4D6C22 !important; 
+}
+
+.ds-ui-flags {
+	position:absolute; 
+	top:6px; left:90%;
+	font-weight:normal;
+	xbox-shadow: none !important;
+	xborder-width: 0px;
+}
+
+/*----- JQUERY MOBILE OVERRIDES -------*/
+
+.ui-input-search { 
+	position: absolute;
+	width: 20% !important;
+	top: 6px !important;
+	left: 65% !important;
+	margin: 0 !important; 
+	border-radius: 3px;
+	border-width: 0px;
+}
+
+.ui-btn {
+	padding: .4em 1em;
+}
+
+.ui-input-text {
+	border-radius: 3px;
+	border-color:#eeeeee !important; 
+}
+
+.zxx {
+	margin-right:10px;
+	border-width:10px;
+	border-color:rgba(255,0,0,255);
+}
+/* Overriden to remove scroll bars */
+.ui-mobile .ui-page-active {
+	overflow: hidden;
+}
+
+/* Allow flags combo to overlap header*/
+.ui-header {
+	overflow: visible;
+}
+
+/* Overriden to make transparent backgrounds */
+.ui-body-a, .ui-page-theme-a .ui-body-inherit, html .ui-bar-a .ui-body-inherit, html .ui-body-a .ui-body-inherit, 
+html body .ui-group-theme-a .ui-body-inherit, html .ui-panel-page-container-a {
+	background-color:rgba(255,255,255,255);
+	border-color:rgba(255,255,255,255);
+}
+
+/* Overriden to make transparent backgrounds
+.ui-page-theme-a .ui-btn, html .ui-body-a .ui-btn, html body .ui-group-theme-a .ui-btn {
+	background-color:rgba(0,0,0,0);
+	border-color:rgba(0,0,0,0);
+} */
+
+/* Overridden to remove margins */
+.ui-select {
+	margin: 0 !important;
+}
+
+/* Overridden to remove -1em margin */
+.ui-content .ui-listview {
+	margin: 0 !important;
+}
+
+/* Overridden to remove blue focus glow */
+.ui-focus, .ui-btn:focus, .ui-input-search  {
+    box-shadow: none !important;
+}
+
+.lst-icon {
+	margin: 0 10% 0 0;
+	vertical-align: middle;
+}
+
