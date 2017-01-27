@@ -1,0 +1,158 @@
+<html>
+<head>
+<meta name="viewport" content="width=device-width">
+
+<!-- Use the JQueryMobile for our UI -->
+
+<link rel="stylesheet" href="droidscript-web/jquery-mobile/jquery.mobile-1.4.5.min.css" />
+<link rel="stylesheet" href="droidscript-web/jquery-mobile-font-awesome/css/jqm-font-awesome-usvg-upng.min.css" />
+<link rel="stylesheet" href="droidscript-web/font-awesome/css/font-awesome.min.css" />
+<link rel="stylesheet" href="droidscript-web/jquery-mobile-cards/card-css.css" />
+<script src="droidscript-web/jquery/jquery-1.12.1.min.js"></script>
+<script src="droidscript-web/wrappers/jquery-mobile-init.js"></script>
+<script src="droidscript-web/jquery-mobile/jquery.mobile-1.4.5.min.js"></script>
+<script src="droidscript-web/wrappers/jquery-mobile.js"></script>
+<link rel="stylesheet" href="droidscript-web/wrappers/jquery-mobile.css" />
+<script src="droidscript-web/app.js"></script>
+
+<!-- Custom styles -->
+<link type="text/css" rel="stylesheet" href="style.css" />
+
+<script>
+function OnStart()
+{
+	var lay = app.CreateLayout( "Vertical", "Left" );
+	lay.SetBackground( "Img/android.png", "repeat" );
+	lay.SetPadding( 0.1,0,0,0.05 );
+	
+	var layHoriz = app.CreateLayout( "Horizontal" );
+	lay.AddChild( layHoriz );
+	
+	var img = app.CreateImage( "Img/medal.png", 0.08 );
+	img.SetMargins( 0.02, 0.02, 0.02, 0.02 );
+	layHoriz.AddChild( img );
+	
+	var layVert = app.CreateLayout( "Vertical", "" );
+	layHoriz.AddChild( layVert );
+	
+	var img = app.CreateImage( "Img/icon.png" );
+	img.SetMargins( 0, 0.02, 0, 0 );
+	layVert.AddChild( img );
+	
+	var s = "<b>DroidScript Coding Competition Winners</b><br><h3>2016</h3>"
+	var txt = app.CreateText( s, 0.5, -1, "MultiLine,Html" );
+	txt.SetMargins( 0.02, 0.02, 0.02, 0 );
+	txt.SetTextSize( 26 );
+	layVert.AddChild( txt );
+	
+	var img = app.CreateImage( "Img/medal.png", 0.08 );
+	img.SetMargins( 0.02, 0.02, 0.02, 0.02 );
+	layHoriz.AddChild( img );
+	
+	var txt = app.CreateText( "Games", -1,-1, "bold" );
+	txt.SetMargins( 0.02, 0, 0.02, 0 );
+	txt.SetTextColor( "green" );
+	txt.SetTextSize( 26 );
+	lay.AddChild( txt );
+	
+	var list = "The Walls:Todor Hryn:Img/The Walls.png:The Walls|"
+		+ "<b>Todor Hryn</b><br><br>An addictive game with a nice variety of graphics.<br><br>"
+		+ "Every time you move all cells swap state " 
+		+ "between empty and obstacle. The game is over if you move to a cell that "
+		+ "is currently surrounded by empty cells because each of them will turn into an obstacle.<br><br>"
+		+ "Don't get trapped!,"
+	
+		+ "Intergalactic Bar Billiards:Chris Miller:Img/IBB.png:IBB|" 
+		+ "<b>Chris Miller</b><br><br>A spaced out game of billiards inspired by the " 
+		+ "'Hitchhikers Guide to the Galaxy'.<br><br> Chris created the music himself for this game"
+		+ " and would like to acknowledge the coding wizardry of Ben; his father Dirk; and AlexF"
+		+ " who all helped to bring this game to life. <br><br>Watch out for the black hole!,"
+		
+		+ "Xcar:Ben Weidl (mengistcool):Img/Xcar.png:Xcar|" 
+		+ "<b>Ben Weidl (mengistcool)</b><br><br>An exciting 3D driving game with awesome sound effects.<br><br>" 
+		+ "This game shows an impressive understanding of 3D graphics and matrix mathematics.<br><br>"
+		+ "Keep your eyes on the road or you'll regret it!,"
+		
+		+ "Pipe Tracker:AlexF (Symbroson):Img/Pipe Tracker.png:Pipe Tracker|" 
+		+ "<b>AlexF (Symbroson)</b><br><br>Another excellent game from our resident coding wizard.<br><br>" 
+		+ "This game is both clever and original and provides the full multi-level game experience.<br><br>"
+		+ "Timing and concentration are essential or it's game over dude!"
+		
+	lst = app.CreateList( list, 0.8, -1, "cards:2x3" );
+	lst.SetOnTouch( function(title,body,index,data){ShowDialog(title,data)} );
+	lay.AddChild(lst);
+	
+	var txt = app.CreateText( "Tools and Education", -1,-1, "bold" );
+	txt.SetMargins( 0.02, 0.04, 0.02, 0 );
+	txt.SetTextColor( "green" );
+	txt.SetTextSize( 26 );
+	lay.AddChild( txt );
+	
+	var list = "ExtUI:Alexandr Strashko:Img/ExtUI.png:ExtUI|"
+		+ "<b>Alexandr Strashko</b><br><br>This powerful DroidScript plugin will be an excellent addition to our official plugins" 
+		+ " list.<br><br>It provides a treasure trove of Android widgets and exposes a generic way of accessing the Android API's.<br><br>"
+		+ "This guy really knows his stuff!,"
+		
+		+ "PicSite:Nikhil Baby:Img/PicSite.png:PicSite|"
+		+ "<b>Nikhil Baby</b><br><br>This well crafted app shows a real flare for graphics and presentation." 
+		+ "<br><br>The tutorial and docs are especially well implemented and it's a very professional job overall.<br><br>"
+		+ "This could actually be a useful app too!,"
+		
+		+"CTF Time Tables:Mickael Bauer (BareK):Img/CTF Time Tables.png:CTF Time Tables|"
+		+ "<b>Mickael Bauer (BareK)</b><br><br>An educational and fun app with an attractive user interface.<br><br>" 
+		+ "Demonstrating how to create good looking and entertaining educational apps; Mickael shows us "
+		+ "how ClickTeam Fusion projects exported as HTML5 can easily be used in DroidScript.<br><br>"
+		+ "Crunch those numbers as fast as you can!"		
+
+	lst = app.CreateList( list, 0.8, -1, "cards:2x3" );
+	lst.SetOnTouch( function(title,body,index,data){ShowDialog(title,data)} );
+	lay.AddChild(lst);
+
+	app.AddLayout(lay);
+}
+
+function ShowDialog( title, data )
+{
+	var spk = data.split("|")[0];
+	var notes = data.split("|")[1];
+	
+	var mobile = app.IsMobile();
+	var dlg = app.CreateDialog( title, "AutoCancel" );
+
+	var layDlg = app.CreateLayout( mobile?"Vertical":"Horizontal" );
+	layDlg.SetMargins( 0.02, 0.02, 0.02, 0.02 );
+	dlg.AddLayout(layDlg);
+	
+	var layVert = app.CreateLayout("Vertical", "");
+	layVert.SetMargins( 0.02, 0.02, 0.02, 0.02 );
+	layDlg.AddChild(layVert);
+	
+	var img = app.CreateImage( "Img/"+spk+".png", mobile?0.2:0.15 );
+	layVert.AddChild( img );
+	
+	var path = "http://androidscript.org/Home/demos/";
+	var s = "<a href='"+encodeURI(path+spk)+".spk' target='_blank' download>Download SPK</a>";
+	if( spk=="ExtUI" ) s = "<a href='#' onclick='alert(\"Coming soon!\")'>Download Plugin</a>";
+	var txt = app.CreateText( s, -1,-1, "html" );
+	txt.SetMargins( 0, 0.02, 0, 0 );
+	layVert.AddChild( txt );
+	
+	var txt = app.CreateText( notes, mobile?0.7:0.2,-1, "Left,MultiLine,HTML" );
+	txt.SetMargins( 0, mobile?0:0.02, 0.02, 0.02 );
+	layDlg.AddChild( txt );
+	
+	dlg.Show();
+}
+</script>
+</head>
+
+<body onload="OnStart()" >
+	<div id="pageMain" data-role="page" class="ui-responsive-panel" >
+		<div id="contentMain" role="main" class="ui-content no-padding">		
+		</div>
+	</div>
+	<div id="showPopup" data-role="popup" data-theme="a" data-transition="fade" class="ui-content">
+		<p></p>
+	</div>
+</body>
+</html>

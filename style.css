@@ -1,0 +1,19 @@
+	
+@font-face {
+  font-family: 'OpenSans';
+  font-style: normal;
+  font-weight: 400;
+  src: local('OpenSans'), local('OpenSans'), url('droidscript-web/fonts/open-sans/OpenSans-Regular.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'OpenSans';
+  font-style: normal;
+  font-weight: 600;
+  src: local('OpenSans-Semibold'), local('OpenSans-Semibold'), url('droidscript-web/fonts/open-sans/OpenSans-Semibold.ttf') format('truetype');
+}
+
+body, .ui-btn {
+	font-family: OpenSans;
+	line-height: 1.6;
+}
