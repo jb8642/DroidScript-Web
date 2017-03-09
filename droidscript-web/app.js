@@ -131,13 +131,13 @@ function App(impl)
 // 	this.SaveBoolean = function( name,value,file ) { prompt( "#", "App.SaveBoolean("+name+"\f"+value+"\f"+file ); }	
 // 	this.ClearData = function( file ) { prompt( "#", "App.ClearData(\f"+file ); }
 // 	this.GetTop = function() { return parseFloat(prompt( "#", "App.GetTop(" )); }
- 	this.GetScreenWidth = function() { return this.impl.GetScreenWidth() }
- 	this.GetScreenHeight = function() { return this.impl.GetScreenHeight() }
+ 	this.GetScreenWidth = function() { return this.impl.GetScreenWidth(); }
+ 	this.GetScreenHeight = function() { return this.impl.GetScreenHeight(); }
 // 	this.GetScreenDensity = function() { return parseFloat(prompt( "#", "App.GetScreenDensity(" )); }
- 	this.GetDisplayWidth = function() { return this.impl.GetDisplayWidth() }
- 	this.GetDisplayHeight = function() { return this.impl.GetDisplayHeight() }
+ 	this.GetDisplayWidth = function() { return this.impl.GetDisplayWidth(); }
+ 	this.GetDisplayHeight = function() { return this.impl.GetDisplayHeight(); }
 // 	this.GetDefaultOrientation = function() { return prompt( "#", "App.GetDefaultOrientation(" ); }	
-// 	this.GetOrientation = function() { return prompt( "#", "App.GetOrientation(" ); }	
+ 	this.GetOrientation = function() { return this.impl.GetOrientation(); }	
 // 	this.SetOrientation = function( orient,callback ) { prompt( "#", "App.SetOrientation(\f"+orient+"\f"+(callback?callback.name:null) ); }	
 // 	this.GetRotation = function() { return parseInt(prompt( "#", "App.GetRotation(" )); }	
 // 	this.GetBatteryLevel = function() { return parseFloat(prompt( "#", "App.GetBatteryLevel(\f" )); }
@@ -255,7 +255,7 @@ function App(impl)
 	// this.CreateSynth = function( type ) { var ret = prompt( "#", "App.CreateSynth("+type ); if( ret ) return new Syn(ret); else return null; }	
 	// this.CreateBluetoothSerial = function( mode ) { var ret = prompt( "#", "App.CreateBluetoothSerial(\f"+mode ); if( ret ) return new Bts(ret); else return null; }	
 	// this.CreateZipUtil = function( mode ) { var ret = prompt( "#", "App.CreateZipUtil(\f"+mode ); if( ret ) return new Zip(ret); else return null; }	
-	// this.CreateDownloader = function( options ) { var ret = prompt( "#", "App.CreateDownloader(\f"+options ); if( ret ) return new Dwn(ret); else return null; }	
+	this.CreateDownloader = function( options ) { var ret = this.impl.CreateDownloader(options); if( ret ) return new Dwn(ret); else return null; }	
 	// this.CreateMediaStore = function() { var ret = prompt( "#", "App.CreateMediaStore(" ); if( ret ) return new Med(ret); else return null; }	
 	// this.CreatePlayStore = function() { var ret = prompt( "#", "App.CreatePlayStore(" ); if( ret ) return new Ply(ret); else return null; }	
 	// this.CreateNotification = function( options ) { var ret = prompt( "#", "App.CreateNotification(\f"+options ); if( ret ) return new Not(ret); else return null; }	
@@ -692,19 +692,19 @@ function Lst( impl )
 //     return obj;
 // }
 
-// function Scr( id )
-// {
-//     var obj = new Obj( id );  
-//     obj.GetType = function() { return "Scroller"; }
-//     obj.AddChild = function( child ) { prompt( obj.id, "Scr.AddChild(\f"+(child?child.id:null) ); }
-//     obj.RemoveChild = function( child ) { prompt( obj.id, "Scr.RemoveChild(\f"+(child?child.id:null) ); }    
-//     obj.DestroyChild = function( child ) { prompt( obj.id, "Scr.DestroyChild(\f"+(child?child.id:null) ); }  
-//     obj.ScrollTo = function( x,y ) { prompt( obj.id, "Scr.ScrollTo\f"+x+"\f"+y ); }
-//     obj.ScrollBy = function( x,y ) { prompt( obj.id, "Scr.ScrollBy\f"+x+"\f"+y ); }
-//     obj.GetScrollX = function() { return parseFloat(prompt( obj.id, "Scr.GetScrollX(" )); }
-//     obj.GetScrollY = function() { return parseFloat(prompt( obj.id, "Scr.GetScrollY(" )); }
-//     return obj;
-// }
+function Scr( impl )
+{
+    var obj = new Obj( impl );  
+    obj.GetType = function() { return "Scroller"; }
+    obj.AddChild = function( child ) { this.impl.AddChild(child.impl); } //prompt( obj.id, "Scr.AddChild(\f"+(child?child.id:null) ); }
+    obj.RemoveChild = function( child ) { this.impl.RemoveChild(child.impl); } //prompt( obj.id, "Scr.RemoveChild(\f"+(child?child.id:null) ); }    
+    obj.DestroyChild = function( child ) { this.impl.DestroyChild(child.impl); } //prompt( obj.id, "Scr.DestroyChild(\f"+(child?child.id:null) ); }  
+    obj.ScrollTo = function( x,y ) { this.impl.ScrollTo(x,y); } //prompt( obj.id, "Scr.ScrollTo\f"+x+"\f"+y ); }
+    obj.ScrollBy = function( x,y ) { this.impl.ScrollBy(x,y); } // prompt( obj.id, "Scr.ScrollBy\f"+x+"\f"+y ); }
+    obj.GetScrollX = function() { return this.impl.GetScrollX(); } // parseFloat(prompt( obj.id, "Scr.GetScrollX(" )); }
+    obj.GetScrollY = function() { return this.impl.GetScrollY(); } // (prompt( obj.id, "Scr.GetScrollY(" )); }
+    return obj;
+}
 
 function Dlg( impl )
 {
@@ -813,18 +813,18 @@ function Ynd( impl )
 //     return obj;  
 // }
 
-// function Dwn( id )
-// {
-//     var obj = new SObj( id );    
-//     obj.GetType = function() { return "Downloader"; }
-//     obj.Download = function( url,dest ) { prompt( obj.id, "Dwn.Download(\f"+url+"\f"+dest ); }
-//     obj.IsComplete = function() { return prompt( obj.id, "Dwn.IsComplete(" )=="true"; } 
-//     obj.GetProgress = function() { return parseFloat(prompt( obj.id, "Dwn.GetProgress(" )); }  
-//     obj.GetSize = function() { return parseFloat(prompt( obj.id, "Dwn.GetSize(" )); }  
-//     obj.SetOnComplete = function( callback ) { prompt( obj.id, "Dwn.SetOnComplete(\f"+callback.name ); }  
-//     obj.SetOnError = function( callback ) { prompt( obj.id, "Dwn.SetOnError(\f"+callback.name ); }    
-//     return obj;  
-// }
+function Dwn( impl )
+{
+    var obj = new SObj( impl );    
+    obj.GetType = function() { return "Downloader"; }
+    obj.Download = function( url,dest ) { this.impl.Download(url, dest); }
+    obj.IsComplete = function() { return this.impl.IsComplete(); } 
+    obj.GetProgress = function() { return this.impl.GetProgress(); }  
+    obj.GetSize = function() { return this.impl.GetSize(); }  
+    obj.SetOnComplete = function( callback ) { this.impl.SetOnComplete(callback); }
+    obj.SetOnError = function( callback ) { this.impl.SetOnError(callback); }
+    return obj;  
+}
 
 // function Med( id )
 // {

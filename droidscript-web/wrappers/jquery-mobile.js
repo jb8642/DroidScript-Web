@@ -17,6 +17,7 @@
 var _h = $(window).height();
 var _w = $(window).width();
 var _jqmId = 0;
+var _transitionalAPI = false; // Detect use of incompatible API and switch to using it
 
 function _getGUIImpl()
 {
@@ -28,20 +29,26 @@ function JQueryMoble()
 	var isMobile = (/Android|webOS|iPhone|iPad|iPod|BlackBerry|BB|PlayBook|IEMobile|Windows Phone|Kindle|Silk|Opera Mini/i.test(navigator.userAgent));
 	var backColor = null;
 	
-	this.IsMobile = function() { return isMobile; }
-	this.GetScreenWidth = function() { return $(window).width() }
- 	this.GetScreenHeight = function() { return $(window).height() }
- 	this.GetDisplayWidth = function() { return $(window).width() }
- 	this.GetDisplayHeight = function() { return $(window).height() }
+	this.IsMobile = function() { return isMobile; };
+	this.GetScreenWidth = function() { return $(window).width() };
+ 	this.GetScreenHeight = function() { return $(window).height() };
+ 	this.GetDisplayWidth = function() { return $(window).width() };
+ 	this.GetDisplayHeight = function() { return $(window).height() };
+	this.GetOrientation = function() {
+        if(_h > _w) { return "Portrait"; }
+        return "Landscape";
+    };
 	
 	this.CreateLayout = function( type, options ) { return new JQueryMobile_Lay(type, options);	};
-	this.CreateImage = function(file, width, height, options, w, h) { return new JQueryMobile_Img(file, width, height, options, w, h); }	
+	this.CreateScroller = function( width, height, options ) { return new JQueryMobile_Scr(width, height, options);	};
+    this.CreateDownloader = function() { return new JQueryMobile_Dwn(); }
+	this.CreateImage = function(file, width, height, options, w, h) { return new JQueryMobile_Img(file, width, height, options, w, h); };
 	this.CreateButton = function(title, width, height, options) { return new JQueryMobile_Btn(title, width, height, options); };
 	this.CreateText = function(text, width, height, options) { return new JQueryMobile_Txt(text, width, height, options); };
-	this.CreateTextEdit = function(text, width, height, options) { return new JQueryMobile_Txe(text, width, height, options); }	
-	this.CreateCheckBox = function(text, width, height, options) { return new JQueryMobile_Chk(text, width, height, options); }
-	this.CreateSpinner = function(list, width, height, options) { return new JQueryMobile_Spn(list, width, height, options); }
-	this.CreateList = function(list, width, height, options) { return new JQueryMobile_Lst(list, width, height, options); }
+	this.CreateTextEdit = function(text, width, height, options) { return new JQueryMobile_Txe(text, width, height, options); };
+	this.CreateCheckBox = function(text, width, height, options) { return new JQueryMobile_Chk(text, width, height, options); };
+	this.CreateSpinner = function(list, width, height, options) { return new JQueryMobile_Spn(list, width, height, options); };
+	this.CreateList = function(list, width, height, options) { return new JQueryMobile_Lst(list, width, height, options); };
 	this.CreatePanel = function(options) 
 	{ 
 		var panel = new JQueryMobile_Pnl(options);
@@ -50,7 +57,7 @@ function JQueryMoble()
 		if( backColor ) getPanelWrapper().css("background-color", backColor);
 	
 		return panel;
-	}
+	};
 	this.CreateActionBar = function(title, buttons) 
 	{ 
 		var actionBar = new JQueryMobile_Bar(title, buttons);
@@ -62,7 +69,7 @@ function JQueryMoble()
 		$(window).trigger('resize');
 		
 		return actionBar;
-	}
+	};
 	this.CreateDialog = function( title,options ) 
 	{ 
 		var dialog = new JQueryMobile_Dlg(title, options);
@@ -72,7 +79,7 @@ function JQueryMoble()
 			dialog.popup();		
 		}
 		return dialog;
-	}
+	};
 	this.CreateYesNoDialog = function( msg ) 
 	{ 
 		var dialog = new JQueryMobile_Ynd(msg);
@@ -83,8 +90,8 @@ function JQueryMoble()
 			dialog.popup("open");
 		}
 		return dialog;
-	}
-	this.CreateMap = function(url,width,height,options) { return new JQueryMobile_Map(url, width, height, options); }
+	};
+	this.CreateMap = function(url,width,height,options) { return new JQueryMobile_Map(url, width, height, options); };
 
 	this.AddLayout = function( layout ) { 
 		getPageContent().append(layout);
@@ -117,7 +124,7 @@ function JQueryMoble()
 		setTimeout(function() {
 			$("#showPopup").popup("close");
 		}, duration);
-	}
+	};
 
 	this.SetBackColor = function( clr ) { backColor = clr; getPage().css("background-color", clr); getPanelWrapper().css("background-color", clr); };
 	
@@ -160,7 +167,12 @@ function JQueryMobile_Lay(type, options)
 
 	var orientation = "vertical";
 
-	if(type && type.toLowerCase()=="horizontal")
+    if(type) {
+        type = type.toLowerCase();
+        if(type=="horizontal" || type=="vertical") { _transitionalAPI=true; } // DroidScript API uses options for this
+    }
+	if(options.indexOf("horizontal") >-1 || 
+        type && type.toLowerCase()=="horizontal") // Web-only API
 	{
 		orientation = "horizontal";
 	}
@@ -196,6 +208,78 @@ function JQueryMobile_Lay(type, options)
 	return lay;
 }
 
+function JQueryMobile_Dwn() {
+    var dwn={};
+        
+    dwn.SetOnComplete = function( callback ) { dwn.callback=callback; };
+    
+    dwn.Download = function(url, tgt) {
+        //window.location=url;
+        window.open(url, "_blank"); // Download tgt is ignored on this platform
+    };
+    
+    return dwn;
+//     obj.Download = function( url,dest ) { this.impl.Download(url, dest); }
+//     obj.IsComplete = function() { return this.impl.IsComplete(); } 
+//     obj.GetProgress = function() { return this.impl.GetProgress(); }  
+//     obj.GetSize = function() { return this.impl.GetSize(); }  
+//     obj.SetOnComplete = function( callback ) { this.impl.SetOnComplete(callback); }
+//     obj.SetOnError = function( callback ) { this.impl.SetOnError(callback); }
+}
+
+function JQueryMobile_Scr(width, height, options)
+{
+	var scr = $("<div>");
+	scr.css( { display:"block", "text-align":"center", "white-space":"nowrap", "overflow":"hidden", "background-color":"black" } );
+	_initObj(scr);
+
+	options = options ? options.toLowerCase() : "";
+
+	if(options.indexOf("fillxy") > -1)
+	{
+		scr.css( { width:"100%", height:"100%" } );
+	}
+	else if(options.indexOf("fillx") >-1)
+	{
+		scr.css( { width:"100%" } );
+	}
+	else if(options.indexOf("filly") >-1)
+	{
+		scr.css( { height:"100%" } );
+	}
+	if(options.indexOf("left") >-1)
+	{
+		scr.css( { "text-align": "left" } );
+	}
+	else if(options.indexOf("right") >-1)
+	{
+		scr.css( { "text-align": "right" } );
+	}
+
+	scr.AddChild = function( child ) 
+	{ 
+        child.removeClass("horizontal-child");
+        child.addClass("vertical-child");
+
+		scr.append( child );
+
+		scr.append("<br>");
+
+		if(child.init)
+			child.init();
+	};
+    
+/*    // Remaining to implement:
+    obj.RemoveChild = function( child ) { this.impl.RemoveChild(child.impl); } //prompt( obj.id, "Scr.RemoveChild(\f"+(child?child.id:null) ); }    
+    obj.DestroyChild = function( child ) { this.impl.DestroyChild(child.impl); } //prompt( obj.id, "Scr.DestroyChild(\f"+(child?child.id:null) ); }  
+    obj.ScrollTo = function( x,y ) { this.impl.ScrollTo(x,y); } //prompt( obj.id, "Scr.ScrollTo\f"+x+"\f"+y ); }
+    obj.ScrollBy = function( x,y ) { this.impl.ScrollBy(x,y); } // prompt( obj.id, "Scr.ScrollBy\f"+x+"\f"+y ); }
+    obj.GetScrollX = function() { return this.impl.GetScrollX(); } // parseFloat(prompt( obj.id, "Scr.GetScrollX(" )); }
+    obj.GetScrollY = function() { return this.impl.GetScrollY(); } // (prompt( obj.id, "Scr.GetScrollY(" )); }
+*/    
+	return scr;
+}
+
 function JQueryMobile_Img(file, width, height, options, w, h)
 {
 	var w = width, h = height;
@@ -227,8 +311,8 @@ function JQueryMobile_Img(file, width, height, options, w, h)
     //img.SetOnTouchDown = function( callback ) { this.impl.SetOnTouchDown(callback); }
     img.SetOnTouch = function( callback ) { 
     	img.mouseup(function() { callback("Up"); }); 
-    	img.mousedown(function() { callback("Down"); }); 
-    	img.mousemove(function() { callback("Move"); });
+    	//img.mousedown(function() { callback("Down"); }); 
+    	//img.mousemove(function() { callback("Move"); });
 		img.css("cursor", (callback?"pointer":"auto") );
     } 
     img.SetOnTouchUp = function( callback ) { img.mouseup(callback); img.css("cursor",(callback?"pointer":"auto"));  }  
@@ -391,13 +475,14 @@ function JQueryMobile_Txt(text, width, height, options)
     txt.SetEllipsize = function( mode ) { console.log("SetEllipsize not implemented"); return 0; } 
     txt.SetTextShadow = function( radius,dx,dy,color ) { console.log("SetTextShadow not implemented"); return 0; }   
     txt.SetOnTouch = function( callback ) { 
-    	txt.mouseup(function() { callback("Up"); }); 
-    	txt.mousedown(function() { callback("Down"); }); 
-    	txt.mousemove(function() { callback("Move"); });
+        txt[0].onclick=function() { callback(); return false; }; // Needed to prevent default link action.  Apparently using mouseup doesn't return callback value.
+    	//txt.mouseup(callback); 
+    	//txt.mousedown(function() { callback("Down"); }); 
+    	//txt.mousemove(function() { callback("Move"); });
     } 
     txt.SetOnTouchUp = function( callback ) { txt.mouseup(callback); }  
     txt.SetOnTouchMove = function( callback ) { txt.mousemove(callback); }
-    txt.SetOnTouchDown = function( callback ) { txt.mouseup(callback); } 
+    txt.SetOnTouchDown = function( callback ) { txt.mousedown(callback); } 
     txt.SetOnLongTouch = function( callback ) { console.log("SetOnLongTouch not implemented"); }   
     txt.SetTouchable = function( touchable ) { console.log("SetTouchable not implemented"); }
 
@@ -553,16 +638,23 @@ function JQueryMobile_Lst(list, width, height, options)
 
 			var components = items[i].split(":");
 			itemData.title = components[0].replace( /\^c\^/g, ":");
-
-			if(components.length > 3 )
+            
+            
+			if(components.length > 3 && components[3].indexOf('|') > -1 ) // Transitional API
 			{
+                _transitionalAPI=true;
 				itemData.body = components[1].replace(/\^c\^/g, ":");
 				itemData.icon = (components[2] !== "null") ? components[2] : "";
 				itemData.data = components[3].replace(/\^c\^/g, ":");
 			}
+			else if(components.length > 3 )
+			{
+				itemData.body = (components[1]+'<br />\n'+components[2]).replace(/\^c\^/g, ":"); // Two-line list items
+				itemData.icon = (components[3] !== "null") ? components[3] : "";
+            }            
 			else if(components.length === 3)
 			{
-				itemData.body = components[1].replace(/\^c\^/g, ":");
+				itemData.body = components[1].replace(/\^c\^/g, ":"); // Single-line list items
 				itemData.icon = (components[2] !== "null") ? components[2] : "";
 			}
 			else if(components.length === 2)
@@ -630,7 +722,12 @@ function JQueryMobile_Lst(list, width, height, options)
 				if(lst.onTouchCallback) 
 				{ 
 					var itemData = $(this).data("itemData");
-					lst.onTouchCallback( itemData.title, itemData.body, $(this).index(), itemData.data ); 
+                    if(_transitionalAPI) {
+                        lst.onTouchCallback( itemData.title, itemData.body, $(this).index(), itemData.data ); 
+                    }
+                    else {
+                        lst.onTouchCallback( itemData.title, itemData.body, itemData.icon, $(this).index(), itemData.data ); 
+                    }
 				} 
 			});
 
@@ -639,7 +736,12 @@ function JQueryMobile_Lst(list, width, height, options)
 				if(lst.onLongTouchCallback) 
 				{ 
 					var itemData = $(this).data("itemData");
-					lst.onLongTouchCallback(itemData.title, itemData.body, $(this).index()); 
+                    if(_transitionalAPI) {
+                        lst.onLongTouchCallback(itemData.title, itemData.body, $(this).index()); 
+                    }
+                    else {
+                        lst.onLongTouchCallback(itemData.title, itemData.body, itemData.icon, $(this).index()); 
+                    }
 				}
 			});
 
@@ -1308,6 +1410,12 @@ function _redraw( element )
 			_setSize( element, element._width, element._height, element._options );
 		//}
 	}
+}
+
+function _onResize() {
+    _h = $(window).height();
+    _w = $(window).width();
+    if(typeof OnConfig === 'function') { OnConfig(); }
 }
 
 /*
