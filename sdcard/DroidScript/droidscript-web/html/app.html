@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<!-- Browser-based DroidScript implementation
+ * Copyright 2017 droidscript.org
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+<!-- NOTE: This file can be copied as index.html to any DroidScript app folder to run the app serverless.
+    Folder layout:
+        +droidscript-web/
+        +MyApp/
+          |MyApp.js
+          |index.html <= THIS FILE
+-->
+<html>
+<head>
+<meta name="viewport" content="width=device-width">
+
+<script type="text/javascript" src="https://rawgit.com/w3core/import.js/master/import.min.js"></script>
+
+<script>
+    _loadStarted=Date.now();
+    
+    function _loadProgress(num, prog) { // Report progress while loading
+        var e=(Date.now()-_loadStarted)/1000;
+        console.log("Loading #"+num+": "+e);
+        var _loader=document.getElementById("_loader");
+        if(_loader) {
+            if(!prog) { _loader.style.display='none'; }
+            else { document.getElementById("_loadpct").innerHTML=prog; }
+        }
+    }
+    
+    function _onResize() {} // Temporary until finished loading, ignore resize
+    
+    (() => { // NOTE: Start of internal function scope
+    
+        var _appUrl = _fixUrl("../<%this.app%>/<%this.app%>.js");
+        // NOTE: Below choose the likely fastest method to load dependencies, based on server
+        function _fetchSimilarHeaders (callback) {
+            if(document.location.protocol == 'file:') { callback(''); return; }
+            var request = new XMLHttpRequest();
+            request.onreadystatechange = function () {
+                if (request.readyState === 4) {
+                    //
+                    // The following headers may often be similar
+                    // to those of the original page request...
+                    //
+                    if (callback && typeof callback === 'function') {
+                        callback(request.getAllResponseHeaders());
+                    }
+                }
+            };
+
+            //
+            // Re-request the same page (document.location)
+            // We hope to get the same or similar response headers to those which 
+            // came with the current page, but we have no guarantee.
+            // Since we are only after the headers, a HEAD request may be sufficient.
+            //
+            request.open('HEAD', document.location, true);
+            request.send(null);
+        }
+        function _importParallel(isDs) { // Faster on a Desktop PC (sample3 loads avg 0.8354 sec vs. 0.985 sec)
+            $import("../droidscript-web/jquery-mobile/jquery.mobile-1.4.5.min.css", // Use the JQueryMobile for our UI
+                    "../droidscript-web/jquery-mobile-font-awesome/css/jqm-font-awesome-usvg-upng.min.css",
+                    "../droidscript-web/font-awesome/css/font-awesome.min.css",
+                    "../droidscript-web/jquery-mobile-cards/card-css.css",
+                    "../droidscript-web/wrappers/jquery-mobile.css",
+                    
+                    // Custom styles
+                    "../droidscript-web/style.css",
+                    
+                    "../droidscript-web/jquery/jquery-1.12.1.min.js", (files) => {
+                        _loadProgress(1, '40%');
+                        $import("../droidscript-web/jquery-mobile/jquery.mobile-1.4.5.min.js",
+                                "../droidscript-web/wrappers/jquery-mobile.js", (files) => { 
+                                    _loadProgress(2, '50%');
+                                    $import(_appUrl, (files) => { 
+                                                _loadProgress(3, '57%');
+                                                $import("../droidscript-web/wrappers/jquery-mobile-init.js",
+                                                        "../droidscript-web/app.js",(files) => {
+                                                            _loadProgress(4, '85%');
+                                                            _init(isDs);
+                                                        });
+                                            });
+                                });
+                    });
+        }            
+        function _importSerial(isDs) { // Faster on Raspberry Pi (sample3 loads avg. 3.9118 sec vs. 6.57 sec)
+            var arr=["../droidscript-web/jquery-mobile/jquery.mobile-1.4.5.min.css",
+                    "../droidscript-web/jquery-mobile-font-awesome/css/jqm-font-awesome-usvg-upng.min.css",
+                    "../droidscript-web/font-awesome/css/font-awesome.min.css",
+                    "../droidscript-web/jquery-mobile-cards/card-css.css",
+                    "../droidscript-web/wrappers/jquery-mobile.css",
+                    
+                    // Custom styles
+                    "../droidscript-web/style.css",
+                    
+                    "../droidscript-web/jquery/jquery-1.12.1.min.js",            
+                    "../droidscript-web/jquery-mobile/jquery.mobile-1.4.5.min.js",
+                    "../droidscript-web/wrappers/jquery-mobile.js",
+                    _appUrl,
+                    "../droidscript-web/wrappers/jquery-mobile-init.js",
+                    "../droidscript-web/app.js"];
+                    
+            var olen=arr.length;
+            function _imports() {
+                if(arr.length > 0) {
+                    $import(arr.shift(), (files) => {
+                        var xa=olen-arr.length;
+                        var pct=(xa*100/olen).toFixed(0);
+                        _loadProgress(xa, pct+'%');
+                        _imports();
+                    });
+                }
+                else { _init(isDs); }
+            }
+
+            _imports();
+        }
+
+        function _fixUrl(appUrl) {
+            // NOTE: Below performs replacement in case we're not running from our custom server
+            if(appUrl == "../<"+"%"+"this.app%>/<"+"%"+"this.app%>.js") {
+                var p=document.location.pathname.replace("/index.html",'');
+                var xx=p.lastIndexOf('/');
+                var app=p.substr(xx+1);
+                appUrl=appUrl.replace(/<%this.app%>/g,app);
+            }
+            return appUrl;
+        }
+        
+        
+        _fetchSimilarHeaders((heads) => { 
+            if(heads == '') { _importParallel(false); return; }
+            heads=JSON.parse('{"'+heads.toLowerCase().replace(/\\r\n/g,'","').replace(/: /g,'": "')+'":""}');
+            var server=heads['server'];
+            var speed=server ? parseInt(server.split(' ')[2]) : 1000;
+            var isDs=server ? server.indexOf('droidscript-web on ') == 0 : false;
+            if(isDs && speed < 1000) { _importSerial(isDs); }  // Faster on slow servers like NodeJS on Raspberry Pi (sample3 loads avg. 3.9118 sec vs. 6.57 sec)
+            else { _importParallel(isDs); } // Faster on Desktop PC (sample3 loads avg 0.8354 sec vs. 0.985 sec) 
+        });
+    
+    })(); // END internal function
+</script>
+
+<style>
+.loader {
+    border: 16px solid #f3f3f3; /* Light grey */
+    border-top: 16px solid #3498db; /* Blue */
+    border-radius: 50%;
+    width: 80px;
+    height: 80px;
+    display: inline-block;
+    animation: spin 2s linear infinite;
+}
+
+#_loader {
+    width:100vw; 
+    height:100vh; 
+    text-align:center; 
+    position:relative; 
+    transform:translateY(40%);
+}
+
+#_loadpct { color: black; }
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+</head>
+
+<body onresize="_onResize()" >
+	<div id="pageMain" data-role="page" class="ui-responsive-panel" >
+		<div id="contentMain" role="main" class="ui-content no-padding"></div>
+        <div id="_loader"><div class="loader"></div><br /><span id="_loadpct">0%</span></div>
+	</div>
+	<div id="showPopup" data-role="popup" data-theme="a" data-transition="fade" class="ui-content">
+		<p></p>
+	</div>
+</body>
+</html>

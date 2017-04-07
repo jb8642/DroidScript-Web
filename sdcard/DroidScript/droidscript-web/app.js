@@ -99,7 +99,7 @@ function App(impl)
 // 	this.GetData = function( name ) { return prompt( "#", "App.GetData(\f"+name ); }	
 // 	this.SetClipboardText = function( txt ) { prompt( "#", "App.SetClipboardText("+txt ); }
 // 	this.GetClipboardText = function() { return prompt( "#", "App.GetClipboardText(" ); }
-// 	this.EnableBackKey = function( enable ) { prompt( "#", "App.EnableBackKey("+enable ); }		
+ 	this.EnableBackKey = function( enable ) { this.impl.EnableBackKey( enable ); }		
 // 	this.Wait = function( secs ) { prompt( "#", "App.Wait("+secs ); }
 // 	this.Alert = function( msg,title ) { prompt( "#", "App.Alert("+msg+"\f"+(title?title:"") ); }
 // 	this.HideKeyboard = function( hide ) { prompt( "#", "App.HideKeyboard("+hide ); }
@@ -124,7 +124,7 @@ function App(impl)
 // 	this.UpdateProgressBar = function( percent ) { prompt( "#", "App.UpdateProgressBar(\f"+percent ); }	
 // 	this.HideProgressBar = function() { prompt( "#", "App.HideProgressBar(" ); }	
 // 	this.LoadText = function( name,dflt,file ) { return prompt( "#", "App.LoadText("+name+"\f"+dflt+"\f"+file ); }
-// 	this.LoadNumber = function( name,dflt,file ) { return parseFloat(prompt( "#", "App.LoadNumber("+name+"\f"+dflt+"\f"+file )); }	
+ 	this.LoadNumber = function( name,dflt,file ) { return parseFloat(this.impl.LoadNumber( name, dflt, file )); }
 // 	this.LoadBoolean = function( name,dflt,file ) { return (prompt( "#", "App.LoadBoolean("+name+"\f"+dflt+"\f"+file )=="true"); }
 // 	this.SaveText = function( name,value,file ) { prompt( "#", "App.SaveText("+name+"\f"+value+"\f"+file ); }
 // 	this.SaveNumber = function( name,value,file ) { prompt( "#", "App.SaveNumber("+name+"\f"+value+"\f"+file ); }	
@@ -152,19 +152,19 @@ function App(impl)
 // 	this.SetVolume = function( stream,level ) { prompt( "#", "App.SetVolume(\f"+stream+"\f"+level ); }
 // 	this.GetVolume = function( stream ) { return parseFloat(prompt( "#", "App.GetVolume(\f"+stream )); }
 // 	this.SetTitle = function( title ) { prompt( "#", "App.SetTitle("+title ); }	
-// 	this.SetMenu = function( list,iconPath ) { prompt( "#", "App.SetMenu("+list+"\f"+iconPath ); }
-// 	this.ShowMenu = function() { prompt( "#", "App.ShowMenu(" ); }		
+ 	this.SetMenu = function( list,iconPath ) { this.impl.SetMenu( list, iconPath ); }
+ 	this.ShowMenu = function() { this.impl.ShowMenu(); }
  	this.AddLayout = function( layout ) { this.impl.AddLayout(layout.impl); }	
  	this.RemoveLayout = function( layout ) { this.impl.RemoveLayout(layout.impl); }
  	this.DestroyLayout = function( layout ) { this.impl.DestroyLayout(layout.impl); }	
-// 	this.MakeFolder = function( fldr ) { prompt( "#", "App.MakeFolder("+fldr ); }	
-// 	this.GetPrivateFolder = function( name ) { return prompt( "#", "App.GetPrivateFolder(\f"+name ); }	
+ 	this.MakeFolder = function( fldr ) { this.impl.MakeFolder( fldr ); }	
+ 	this.GetPrivateFolder = function( name ) { return this.impl.GetPrivateFolder( name ); }	
 // 	this.GetDatabaseFolder = function() { return prompt( "#", "App.GetDatabaseFolder(" ); }
 // 	this.DeleteDatabase = function( name ) { prompt( "#", "App.DeleteDatabase(\f"+name); }
-// 	this.FolderExists = function( fldr ) { return prompt( "#", "App.FolderExists("+fldr )=="true"; }
+ 	this.FolderExists = function( fldr ) { return this.impl.FolderExists( fldr ); }
 // 	this.FileExists = function( file ) { return prompt( "#", "App.FileExists("+file )=="true"; }
 // 	this.IsFolder = function( fldr ) { return prompt( "#", "App.IsFolder("+fldr )=="true"; }
-// 	this.ListFolder = function( path,filter,limit,options ) { return eval(prompt( "#", "App.ListFolder(\f"+path+"\f"+filter+"\f"+limit+"\f"+options )); }
+ 	this.ListFolder = function( path,filter,limit,options ) { return this.impl.ListFolder(path,filter,limit,options); }
 // 	this.GetExternalFolder = function() { return prompt( "#", "App.GetExternalFolder(" ); }
 // 	this.GetInternalFolder = function() { return prompt( "#", "App.GetInternalFolder(" ); }
 // 	this.GetSpecialFolder = function( name ) { return prompt( "#", "App.GetSpecialFolder(\f"+name ); }

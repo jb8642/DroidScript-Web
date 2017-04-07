@@ -1,0 +1,27 @@
+#!/bin/sh
+
+APP="/home/pi/DroidScript-Web/sdcard/DroidScript/droidscript-web/server/dserve.js"
+
+main() {
+        cd /home/pi # Share node_modules with other node apps
+
+	# Below, choose correct binary modules for our architecture
+        v=$(uname -m)
+        if [ "$v" = "armv6l" ]; then
+                dir="node_modules/fibers/bin/linux-arm-48"
+                if [ ! -d "$dir" -a -f linux-arm-48_fibers.node ]; then
+                        mkdir -p "$dir" 
+                        ln linux-arm-48_fibers.node "$dir/fibers.node"
+                fi
+                /home/pi/node-armv6l "$APP"
+        else # armv7l
+                dir="node_modules/fibers/bin/linux-arm-51"
+                if [ ! -d "$dir" -a -f linux-arm-51_fibers.node ]; then
+                        mkdir -p "$dir"
+                        ln linux-arm-51_fibers.node "$dir/fibers.node"
+                fi
+                node "$APP"
+        fi
+}
+
+main

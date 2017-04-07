@@ -14,10 +14,14 @@
  * limitations under the License.
  */
 
-var _h = $(window).height();
-var _w = $(window).width();
+var _h = 0;
+var _w = 0;
 var _jqmId = 0;
 var _transitionalAPI = false; // Detect use of incompatible API and switch to using it
+var _files=[];
+var _started = false;
+var _menu="";
+var _backPressed=0;
 
 function _getGUIImpl()
 {
@@ -125,6 +129,88 @@ function JQueryMoble()
 			$("#showPopup").popup("close");
 		}, duration);
 	};
+    
+    this.ListFolder = function(path, filter, limit, options) {
+        options = options ? options.toLowerCase() : "";
+        
+//        if(path[0] != '/') { path = _prefix+path; }
+//         var results=[];
+//         for(var xa=0; xa<localStorage.length; xa++) {
+//             var key=localStorage.key(xa);
+//             if(filter && key.lastIndexOf(filter) !== key.length-filter.length) { continue; }
+//             if(key.indexOf(path+"/") == 0) { results.push(key); }
+//         }
+        while(path.length>1 && path[path.length-1] == '/') { path=path.substr(0,path.length-1); } // Trim trailing slashes
+        var id="FILE:"+path;
+        var file=_retrieveFile(path);
+        console.log("file="+file+";type="+file.type);
+        if(file.type !== "inode/directory") { return ""; }
+        var data=JSON.parse(_blobToString(file));
+        console.log('ListFolder('+path+')='+JSON.stringify(data));
+        return data;
+    };
+
+    this.MakeFolder = function(path) {
+        console.log("path="+path);
+        if(this.FolderExists(path)) { return; }
+        var prev=path.split('/').slice(0,-1).join('/');
+        if(prev !== '') { this.MakeFolder(prev); } // Make parent folder(s)
+        _createDirWithFilenames(path, []);
+    };
+
+    this.FolderExists = function(path) {
+        return (_retrieveFile(path) !== null);
+    };
+
+    this.GetPrivateFolder = function(name) { // NOTE: Creates the folder when called
+        // e.g. /data/user/0/com/smartphoneremote.androidscriptfree/app_test
+        var uid=0; // FIXME: Need different uid for each website visitor (use cookie/login)
+        var path="/data/user/"+uid+"/com/smartphoneremote.androidscriptfree/app_"+name;
+        this.MakeFolder(path);
+        return path;
+        // NOTE: Need: app.MakeFolder (created using _files, localStorage and Chrome File API)
+        // NOTE: Then we need: Sync files/folders TO server (if permissions allow)
+        // NOTE: Private folder and its contents should generally be allowed (excepting bandwidth/resource limits exceeded)
+        // NOTE: Constraints per IP and/or cookie / bandwidth usage should be checked first
+    };
+
+    this.SetMenu = function( list, iconPath ) {
+        _menu=list;
+        console.log("FIXME: SetMenu");
+    };
+    
+    this.ShowMenu = function() {
+        console.log("FIXME: ShowMenu");
+        alert('menu:'+_menu);
+    };
+    
+    this.EnableBackKey = function( enable ) {
+        if(enable) {
+            window.removeEventListener('popstate');
+            console.log("FIXME: Does EnableBackKey really work?");
+        }
+        else {
+            history.pushState(null, null, document.URL);
+            window.addEventListener('popstate', function () {
+                history.pushState(null, null, document.URL);                
+                if(typeof OnBack === 'function' && _backPressed > 1) { OnBack(); }
+                _backPressed++;
+            });
+        }
+    };
+    
+    this.LoadNumber = function( valueName, dft, shareId ) {
+        var id='VAL'+valueName+(shareId ? (":"+shareId) : "");
+        var ref=localStorage[id];
+        if(!ref) { return dft; }
+        ref=JSON.parse(ref);
+        if(ref.type == 'number') { return ref.val; }
+    };
+    
+    this.SaveNumber = function( valueName, val, shareId ) {
+        var id='VAL'+valueName;
+        localStorage[id]=JSON.stringify({type:'number', val:val, share:shareId});
+    }
 
 	this.SetBackColor = function( clr ) { backColor = clr; getPage().css("background-color", clr); getPanelWrapper().css("background-color", clr); };
 	
@@ -1413,12 +1499,312 @@ function _redraw( element )
 }
 
 function _onResize() {
+    if(typeof $ === 'function') {
+        _redraw(window);
+//         _h = $(window).height();
+//         _w = $(window).width();
+        if(typeof OnConfig === 'function') { OnConfig(); }
+    }
+    else { console.log("UI not loaded yet.  Resize ignored."); }
+}
+
+function _initWebSock() {
+    var host=window.location.hostname;
+    var port=window.location.port;
+    //host='192.168.201.1';
+    //port=81;
+    var wsurl='ws://'+host+':'+port+window.location.pathname;
+    console.log('CON '+wsurl);
+    var proto='droidscript-sync';
+    client = null;
+    
+    try { client=new WebSocket(wsurl, proto); }
+    catch(e) { return null; }
+
+    client.onerror = function() {
+        console.log('Connection Error');
+    };
+    
+    client.onopen = function() {
+        var e=(Date.now()-_loadStarted)/1000;
+        console.log("load4: "+e+"; WebSocket Client Connected");
+        if (client.readyState === client.OPEN) {
+        }
+    };
+    
+    client.onclose = function() {
+        console.log('droidscript-sync Client Closed');
+        //if(!otherSession) {
+            setTimeout(function() { // Run in UI handler
+                if(confirm('Connection to server lost.  Reconnect?')) {
+                    setTimeout('_initWebSock();',5000);
+                }
+            },0);
+        //}
+    };
+    /*  Example MessageEvent {
+            currentTarget: WebSocket {
+                binaryType: "blob",
+                protocol: "droidscript-syn",
+                readyState: 1,
+                url: "ws://192.168.201.1:81/app/AppName/",
+                ...
+            },
+            data: Blob {
+                size: 26105,
+                type: ""
+            },
+            origin: "ws://192.168.201.1:81", 
+            srcElement: WebSocket,
+            target: WebSocket,
+            timeStamp: 26309.395,
+            ...
+        }     
+    */
+    
+    client.onmessage = function(e) {
+        //if(firstCall) { firstCall=false; init(); }
+        //console.log('message received');
+        if (typeof e.data === 'string') {
+            //alert('data='+e.data);
+            //console.log('data='+e.data);
+            var msg=JSON.parse(e.data);
+            if(msg.type == "sync") { _Sync(msg); }
+            if(msg.type == "syncdone" || msg.type == "syncerr") { 
+                if(msg.type == "syncerr") {
+                    console.log("SERVER ERROR: "+msg.err); 
+                    client.send(JSON.stringify({"type":"sync"})); // Continue sync from server
+                }
+                if(!_started && typeof OnStart === 'function') { 
+                    _started=true; 
+                    var _loader=document.getElementById("_loader");
+                    console.log("_loader="+_loader);
+                    if(_loader) { _loader.style.display='none'; }
+                    OnStart();
+                }
+            }
+        }
+        else {
+            console.log('Received data of unknown type '+(typeof e.data)+'; length='+e.length+';elen='+e.data.length+';obj='+JSON.stringify(e.data));  
+            window.teste=e;
+        }
+    };
+}
+
+function _Sync(msg) { // Sync with null msg when client file changes (write/metadata)
+    //console.log("path: "+tree.path+" lastModified="+tree.lastModified);
+    var ref=_retrieveFile(msg.path);
+    if(msg && (!ref || ref.lastModified < msg.lastModified || !ref.data)) { // FIXME: Check for EITHER localStorage data OR Chrome api
+        //console.log("_Sync:!ref:"+(!ref)+";<:"+(ref.lastModified < msg.lastModified)+";ref.data:"+(!ref.data));
+        var uri= "/app/:*"+msg.path; //msg.path.replace(base,"/app/:*"+base);
+        _fetchBlob(uri, (data, blob) => { _storeFile(msg, data, blob); });
+    }
+    client.send(JSON.stringify({"type":"sync"})); // Continue sync from server
+}
+
+function _storeFile(obj, data, blob) { // Input 'data' must be as a data URI
+    // FIXME: Set EITHER localStorage or Chrome data, not both
+    var id='FILE:'+obj.path;
+    // NOTE: Possibly need to update parent directory (if this was a newly created file)
+    var spl=obj.path.split('/');
+    var final=spl.slice(-1)[0];
+    var ppath=spl.slice(0,-1).join('/');
+    if(ppath === '' && obj.path[0] == '/' && obj.path.length > 1) { ppath='/'; } // Even root may need to be updated
+    if(ppath !== '') {
+        var file=_retrieveFile(ppath);
+        if(file && file.type === "inode/directory") {
+            var filenames=JSON.parse(_blobToString(file));
+            if(!filenames.find( (el) => { return el === final; })) { // If directory doesn't have this file yet
+                filenames.push(final);
+                console.log("Added "+final+" to "+JSON.stringify(filenames));
+                _createDirWithFilenames(ppath, filenames);
+            }
+        }
+        else if(!file) { _createDirWithFilenames(ppath, []); } // Create missing parent(s)
+        else { console.error("ERROR: Parent of '"+obj.path+"' is type '"+file.type+"'"); }
+    }
+console.log("STORING "+id);
+    localStorage[id] = JSON.stringify({path:obj.path, lastModified:obj.lastModified, type:obj.ctype, length:blob.length, data:data});
+     var file = _blobToFile(blob, obj.path, obj.lastModified);
+     file.data=data;
+    _files[id] = file;
+}
+
+function _createDirWithFilenames(path, filenames) { // Input array of filenames
+    var ctype="inode/directory";
+    var blob=new Blob([JSON.stringify(filenames)],{type:ctype});
+    var data=_blobToDataURL(blob);
+    var msg={path:path, lastModified:Date.now(), type:blob.type, length:blob.length, data:data};
+    _storeFile(msg, data, blob);
+}
+
+function _retrieveFile(path) {
+    var id='FILE:'+path;
+    var ref=_files[id];
+    if(ref) { return ref; }
+    
+    ref=localStorage[id];
+    if(!ref) { return null; }
+    try {
+        var obj=JSON.parse(ref);
+        var blob=_dataURItoBlob(obj.data)
+        var file=_blobToFile(blob, path, obj.lastModified);
+        file.data=obj.data;
+        _files[id]=file;
+        return file;
+    }
+    catch(e) {
+        console.log("ERROR: "+e.stack+"\nref="+ref);
+        throw e;
+    }
+}
+
+function _blobToFile(blob, name, lastModified) {
+    if(!lastModified) { lastModified=Date.now(); }
+    try { return new File([blob], name, {type:blob.type, lastModified:lastModified}); }
+    catch(e) {
+        var f=new Blob([blob], {type:blob.type});
+        f.name=name;
+        f.lastModified=lastModified;
+        f.lastModifiedDate=new Date(f.lastModified);
+        return f;
+    }
+}
+
+function _fetchBlob(uri, done) { // Returns a blob as a data url (as well as original blob)
+    var xhr = new XMLHttpRequest(); 
+    xhr.open("GET", uri); 
+    xhr.responseType = "blob"; // force the HTTP response, response-type header to be blob
+    xhr.onload = () => {
+        var blob = xhr.response;
+        var reader = new FileReader();
+        reader.onload = ( (self) => {
+            return (e) => { done(e.target.result, blob); }
+        })(this);
+        reader.readAsDataURL(blob);
+    }
+    xhr.send()
+}
+
+function _dataURItoBlob(dataURI) {
+    // convert base64/URLEncoded data component to raw binary data held in a string
+    var byteString;
+    if (dataURI.split(',')[0].indexOf('base64') >= 0)
+        byteString = atob(dataURI.split(',')[1]);
+    else
+        byteString = unescape(dataURI.split(',')[1]);
+
+    // separate out the mime component
+    var mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+
+    // write the bytes of the string to a typed array
+    var ia = new Uint8Array(byteString.length);
+    for (var i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+    }
+
+    return new Blob([ia], {type:mimeString});
+}
+
+function _blobToDataURL(blob) {
+    var u8a=_blobToUint8Array(blob)
+    return 'data:'+blob.type+';base64,'+btoa(_Uint8ToString(u8a));
+}
+
+function _blobToUint8Array(b) {
+    var uri = URL.createObjectURL(b),
+        xhr = new XMLHttpRequest(),
+        i,
+        ui8;
+
+    xhr.open('GET', uri, false);
+    // The magic happens below, which overrides the MIME type, forcing the browser to treat it as plain text, 
+    // using a user-defined character set. This tells the browser not to parse it, and to let the bytes pass through unprocessed.
+    xhr.overrideMimeType('text\/plain; charset=x-user-defined'); // NOTE: Key #1
+    xhr.send(null);
+
+    URL.revokeObjectURL(uri); // Avoid resource leak
+    if (xhr.status != 200) return [];
+
+    ui8 = new Uint8Array(xhr.responseText.length); // NOTE: was response, not responseText.  Not sure if it matters.
+
+    for (i = 0; i < xhr.responseText.length; ++i) {
+        ui8[i] = xhr.responseText.charCodeAt(i) & 0xff; // NOTE: Key #2
+    }
+
+    return ui8;
+}
+
+
+function _load_binary_resource(url) {
+  var req = new XMLHttpRequest();
+  req.open('GET', url, false);
+  //XHR binary charset opt by Marcus Granado 2006 [http://mgran.blogspot.com]
+  req.overrideMimeType('text\/plain; charset=x-user-defined');
+  req.send(null);
+  if (req.status != 200) return '';
+  return req.responseText; // NOTE: Use return: var abyte = _load_binary_resource(url).charCodeAt(x) & 0xff; // throw away high-order byte (f7)
+}
+
+// For short input, Decode base64 back to Uint8Array
+//var u8_2 = new Uint8Array(atob(b64encoded).split("").map(function(c) {
+//    return c.charCodeAt(0); }));
+//    OR use below: var b64encoded = btoa(Uint8ToString(u8));
+function _Uint8ToString(u8a) {
+  var CHUNK_SZ = 0x8000;
+  var c = [];
+  for (var i=0; i < u8a.length; i+=CHUNK_SZ) {
+    c.push(String.fromCharCode.apply(null, u8a.subarray(i, i+CHUNK_SZ)));
+  }
+  return c.join("");
+}
+
+function _asyncBlobToDataURL(blob, callback) {
+    var a = new FileReader();
+    a.onload = function(e) {callback(e.target.result);}
+    a.readAsDataURL(blob);
+}
+
+function _blobToString(b) {
+    var u, x;
+    u = URL.createObjectURL(b);
+    x = new XMLHttpRequest();
+    x.open('GET', u, false); // although sync, you're not fetching over internet
+    x.send();
+    URL.revokeObjectURL(u);
+    return x.responseText;
+}
+
+function _asyncBlobToString(blob, done) {
+    var reader = new FileReader();
+    reader.onload = function() { done(reader.result); }
+    reader.readAsText(blob);   
+}
+
+function _init() {
     _h = $(window).height();
     _w = $(window).width();
-    if(typeof OnConfig === 'function') { OnConfig(); }
+    
+    _initWebSock();
+//     if(dirTree && dirTree != '') {
+//         alert('dirTree='+dirTree);
+//         dirTree=JSON.parse(dirTree);
+//     }
+    
+//    if(typeof OnStart === 'function') { OnStart(); }
 }
 
 /*
+
+// function _asyncDataURItoBlob(dataURI, done) {
+//     fetch(dataURI).then(res => res.blob()).then(blob => { // NOTE: fetch does not work in Safari or IE
+//         // var fd = new FormData()
+//         // fd.append('image', blob, 'filename')
+//         done(blob);
+//         // Upload
+//         // fetch('upload', {method: 'POST', body: fd})
+//     });
+// }
 
 function CreatePage(title)
 {
@@ -1457,124 +1843,6 @@ function CreatePage(title)
 	return page;
 }
 
-function CreateLayout( type, options )
-{    
-	var layoutData = { id:(++_ids) };
-
-	var lay = $("<div>", layoutData);                          
-	lay.css( { display:"block", overflow:"hidden", "text-align":"center" } );
-   
-	options = options ? options.toLowerCase() : "";
-
-	if(options.indexOf("fillxy") > -1)
-	{
-		lay.css( { width:"100%", height:"100%" } );
-	}
-	else if(options.indexOf("fillx") >-1)
-	{
-		lay.css( { width:"100%" } );
-	}
-	else if(options.indexOf("filly") >-1)
-	{
-		lay.css( { height:"100%" } );
-	}
-
-	var orientation = "vertical";
-								                                             
-	if(type && type.toLowerCase()=="horizontal")
-	{
-		orientation = "horizontal";
-	}
-
-	lay.AddChild = function( child ) { 
-		
-		if(orientation === "vertical")
-		{
-			child.removeClass("horizontal-child");
-			child.addClass("vertical-child");
-		}
-		else
-		{
-			child.removeClass("vertical-child");
-			child.addClass("horizontal-child");
-		}
-
-		lay.append( child ); 
-	};
-
-	lay.SetPadding = function(l, t, r, b) {
-		setPadding(lay, l, t, r, b);
-	};
-
-	lay.SetMargins = function(l, t, r, b) {
-		setMargins(lay, l, t, r, b);
-	};
-
-	return lay;
-}
-
-function CreateActionBar(title, buttons)
-{
-	var actionBar = getHeader();
-	actionBar.append("<h1>" + title + "</h1>");
-
-	var leftActionButtons = $("<div class=\"ui-btn-left\">");
-	var rightActionButtons = $("<div class=\"ui-btn-right\">");
-
-	var buttonList = buttons.split(",");
-	for(var i = 0; i < buttonList.length; ++i)
-	{
-		var iconAndPosition = buttonList[i].split(":");
-
-		var button = $("<a href=\"#\" class=\"ui-btn ui-btn-icon-notext ui-corner-all\"></a>");
-		button.addClass("ui-icon-" + iconAndPosition[0].replace(/\[|\]|/gi, ""));
-
-		button.data("itemData", iconAndPosition[0]);
-
-		button.click(function() { 
-			if(actionBar.callback) 
-			{ 
-				var itemData = $(this).data("itemData");
-				actionBar.callback(itemData); 
-			} 
-		});
-
-		var position = (iconAndPosition.length > 1) ? iconAndPosition[1].toLowerCase() : "l";
-
-		if(position === "l")
-		{
-			leftActionButtons.append(button);
-		}
-		else
-		{
-			rightActionButtons.append(button);
-		}
-	}
-
-	actionBar.append(leftActionButtons);
-	actionBar.append(rightActionButtons);
-
-	actionBar.Show = function() {
-		actionBar.toolbar("refresh");
-		actionBar.toolbar("show");
-
-		// This seems to be required to make sure the page content
-		// is resized properly once the header is made visible
-		getPage().trigger("resize");
-		$(window).trigger('resize');
-	};
-
-	actionBar.Hide = function() {
-		actionBar.toolbar("hide");
-	};
-
-	actionBar.SetOnTouch = function(callback) {
-		actionBar.callback = callback;
-	};
-
-	return actionBar;
-}
-
 function CreateToolbar(title)
 {
 	var toolbarData = { id:(++_ids) };
@@ -1595,275 +1863,6 @@ function CreateToolbar(title)
 	}
 
 	return toolbar;
-}
-
-function CreateButton(title, width, height, options)
-{
-	var buttonData = { id:(++_ids) };
-
-	// The wrapper is to allow buttons to size to content
-	var buttonWrapper = $("<div></div>", buttonData);
-
-	var button = $("<a href=\"#\" class=\"ui-btn ui-btn-inline ui-corner-all\">" + title + "</a>");
-
-	setSize(button, width, height);
-
-	options = options ? options.toLowerCase() : "";
-
-	if(options.indexOf("mini") >= 0)
-	{
-		button.addClass("ui-mini");
-	}
-
-	buttonWrapper.SetOnTouch = function(callback) {
-		button.click(callback);
-	}
-
-	buttonWrapper.append(button);
-
-	return buttonWrapper;
-}
-
-function CreateText(content, options)
-{
-	var textData = { id:(++_ids) };
-
-	var text = $("<div></div>", textData);
-
-	options = options ? options.toLowerCase() : "";
-
-	if(options.indexOf("html") >= 0)
-	{
-		text.html(content);
-	}
-	else
-	{
-		text.text(content);
-	}
-
-	if(options.indexOf("left") > -1)
-	{
-		text.css( { "text-align":"left" } );
-	}
-	else if(options.indexOf("right") > -1)
-	{
-		text.css( { "text-align":"right" } );
-	}
-
-	text.SetPadding = function(l, t, r, b) {
-		setPadding(text, l, t, r, b);
-	};
-
-	text.SetMargins = function(l, t, r, b) {
-		setMargins(text, l, t, r, b);
-	};
-
-	return text;
-}
-
-function CreateList( list, width, height, options )
-{
-	var listView = $("<ul data-role=\"listview\" data-inset=\"false\">");
-
-	var items = list.split(",");
-	for(var i = 0; i < items.length; ++i)
-	{
-		var itemData = {
-			title: "",
-			body: "",
-			icon: ""
-		};
-
-		var components = items[i].split(":");
-		itemData.title = components[0].replace("^c^", ":");
-
-		if(components.length === 3)
-		{
-			itemData.body = components[1].replace("^c^", ":");
-			itemData.icon = (components[2] !== "null") ? components[2] : "";
-		}
-		else if(components.length === 2)
-		{
-			itemData.icon = (components[1] !== "null") ? components[1] : "";
-		}
-
-		var item = $("<li data-icon=\"false\">");
-		var itemContent = null;
-
-		if(itemData.icon !== "")
-		{
-			itemContent = $("<a href=\"#\" class=\"ui-btn ui-btn-icon-left ui-icon-" + itemData.icon + "\">");
-		}
-		else
-		{
-			itemContent = $("<a href=\"#\" class=\"ui-nodisc-icon\">");
-		}
-
-		item.append(itemContent);
-		
-		itemContent.append("<h2>" + itemData.title + "</h2>");
-		if(itemData.body !== "")
-		{
-			itemContent.append("<p>" + itemData.body + "</p>");
-		}
-
-		item.data("itemData", itemData);
-
-		item.click(function() { 
-			if(listView.callback) 
-			{ 
-				var itemData = $(this).data("itemData");
-				listView.callback(itemData.title, itemData.body, $(this).index()); 
-			} 
-		});
-
-		listView.append(item);
-	}
-
-	listView.listview();
-
-	setSize(listView, width, height);
-   
-	listView.SetOnTouch = function( callback ) { 
-		this.callback = callback; 
-	};
-	listView.GetText = function() { 
-		return null 
-	};
-	listView.SetPadding = function(l, t, r, b) {
-		setPadding(listView, l, t, r, b);
-	};
-
-	listView.SetMargins = function(l, t, r, b) {
-		setMargins(listView, l, t, r, b);
-	};
-
-	return listView;
-}
-
-function CreatePanel(options)
-{
-	var panelData = { id:(++_ids) };
-
-	var dataPosition = "left";
-	var dataDisplay = "overlay";
-
-	options = options ? options.toLowerCase() : "";
-
-	if(options.indexOf("right") >= 0)
-	{
-		dataPosition = "right";
-	}
-
-	// Display options
-	if(options.indexOf("reveal") >= 0)
-	{
-		dataDisplay = "reveal";
-	}
-	else if(options.indexOf("push") >= 0)
-	{
-		dataDisplay = "push";
-	}
-
-	var panel = $("<div data-role=\"panel\" class=\"ui-panel ui-panel-animate ui-panel-closed\"></div>", panelData);
-
-	panel.attr("id", "panel" + panelData.id);
-	panel.attr("data-position", dataPosition);
-	panel.attr("data-display", dataDisplay);
-	panel.addClass("ui-panel-position-" + dataPosition);
-	panel.addClass("ui-panel-display-" + dataDisplay);
-
-	var innerPanel = $("<div class=\"ui-panel-inner no-padding\"></div>");
-	panel.append(innerPanel);
-
-	var panelLayout = CreateLayout("Vertical", "FillY");
-	innerPanel.append(panelLayout);
-
-	getPage().append( panel );
-
-	panel.Show = function() {
-		panel.panel("open");
-	};
-
-	panel.Hide = function() {
-		panel.panel("close");
-	};
-
-	panel.GetLayout = function() {
-		return panelLayout;
-	};
-
-	panel.panel();
-
-	return panel;
-}
-
-function setPadding(element, l, t, r, b)
-{
-	element.css("padding-left", toPercent(l));
-	element.css("padding-top", toPercent(t));
-	element.css("padding-right", toPercent(r));
-	element.css("padding-bottom", toPercent(b));
-}
-
-function setMargins(element, l, t, r, b)
-{
-	element.css("margin-left", toPercent(l));
-	element.css("margin-top", toPercent(t));
-	element.css("margin-right", toPercent(r));
-	element.css("margin-bottom", toPercent(b));
-}
-
-// function getPage()
-// {
-// 	return $("div[data-role='page']");
-// }
-
-// function getPageContent()
-// {
-// 	return $("div[data-role='page'] .ui-content");
-// }
-
-function getHeader()
-{
-	return $("div[data-role='header']");
-}
-
-function AddLayout( layout )
-{
-	var pageContent = getPageContent();
-
-	pageContent.append(layout);
-}
-
-function AddPage( page )
-{                                                   
-	$("body").append( page );
-
-	//initialize the new page 
-    $.mobile.initializePage();
-}
-
-function ShowPopup( msg, options )
-{
-	var duration = 3500;
-
-	options = options ? options.toLowerCase() : "";
-
-	if(options.indexOf("short") > -1)
-	{
-		duration = 2000;
-	}
-
-	$("#showPopup p").text(msg);
-
-	// Must initialise before opening
-	$("#showPopup").popup();
-	$("#showPopup").popup("open");
-
-	setTimeout(function() {
-		$("#showPopup").popup("close");
-	}, duration);
 }
 
 */
