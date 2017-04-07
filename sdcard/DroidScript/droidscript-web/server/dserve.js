@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /* dserve: DroidScript-web http server
  * Copyright 2017 droidscript.org
  *
@@ -31,19 +32,19 @@ const qs = require('querystring');
 const zlib = require('zlib');
 const os = require('os');
 
-var AppRoot=fsp.join(process.cwd(), "DroidScript-Web");
+var AppRoot=fsp.dirname(fsp.dirname(fsp.dirname(fsp.dirname(fsp.dirname(process.argv[1])))));
 var DSub=fsp.join("sdcard", "DroidScript");
 var WebRoot=fsp.join(AppRoot, DSub, "droidscript-web", "html");
 var LocalNet='',LocalIP='';
 var options={
-    port:81,
-    sport:444,
+    port:8081,
+    sport:8444,
 //    passphrase: '',
     key: fs.readFileSync('ssl/cert.key'),
     cert: fs.readFileSync('ssl/cert.pem'),
     ca: fs.readFileSync('ssl/ca.pem'),
     username:{admin:'admin'},
-    password:{admin:'***REMOVED***'},
+    password:{admin:'password'}, // FIXME: Usernames/passwords should be stored in a separate database, or better yet, rely on Google/OAuth
     realm:{admin:'WiFi Administration'}
 };
 
@@ -70,6 +71,7 @@ function httpserv(options) {
     const httpsServer = require('https').createServer(options, httpsHandler);
     server.listen(options.port, function() {
         console.info("DroidScript server is listening on "+ips.join(";")+" port "+options.port+" and HTTPS port "+options.sport); 
+        console.info("AppRoot: "+AppRoot);
     });
     httpsServer.listen(options.sport);
     wsserv(server);
