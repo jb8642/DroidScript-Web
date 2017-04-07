@@ -35,7 +35,7 @@ function App(impl)
 // 	this.Exit = function( kill ) { prompt( "#", "App.Exit("+kill ); }
 // 	this.ToBack = function() { prompt( "#", "App.ToBack(" ); }
 // 	this.Execute = function( js ) { prompt( "#", "App.Execute("+js ); } 
-// 	this.StartApp = function( file,options,intent ) { prompt( "#", "App.StartApp(\f"+file+"\f"+options+"\f"+intent ); }
+ 	this.StartApp = function( file,options,intent ) { this.impl.StartApp( file, options, intent ); }
 // 	this.StopApp = function( name ) { prompt( "#", "App.StopApp("+name ); }
 // 	this.SetScreenMode = function( mode ) { prompt( "#", "App.SetScreenMode(\f"+mode ); }
 // 	this.SetOptions = function( options ) { prompt( "#", "App.SetOptions(\f"+options ); }
@@ -162,7 +162,7 @@ function App(impl)
 // 	this.GetDatabaseFolder = function() { return prompt( "#", "App.GetDatabaseFolder(" ); }
 // 	this.DeleteDatabase = function( name ) { prompt( "#", "App.DeleteDatabase(\f"+name); }
  	this.FolderExists = function( fldr ) { return this.impl.FolderExists( fldr ); }
-// 	this.FileExists = function( file ) { return prompt( "#", "App.FileExists("+file )=="true"; }
+ 	this.FileExists = function( file ) { return this.impl.FileExists( file ); }
 // 	this.IsFolder = function( fldr ) { return prompt( "#", "App.IsFolder("+fldr )=="true"; }
  	this.ListFolder = function( path,filter,limit,options ) { return this.impl.ListFolder(path,filter,limit,options); }
 // 	this.GetExternalFolder = function() { return prompt( "#", "App.GetExternalFolder(" ); }

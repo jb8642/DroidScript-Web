@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 -->
-<!-- NOTE: This file can be copied as index.html to any DroidScript app folder to run the app serverless.
+<!-- NOTE: This file can be copied as index.html or app.html to any DroidScript app folder to run the app serverless.
     Folder layout:
         +droidscript-web/
         +MyApp/
@@ -132,22 +132,24 @@
         function _fixUrl(appUrl) {
             // NOTE: Below performs replacement in case we're not running from our custom server
             if(appUrl == "../<"+"%"+"this.app%>/<"+"%"+"this.app%>.js") {
-                var p=document.location.pathname.replace("/index.html",'');
+                var p=document.location.pathname.replace("/index.html",'').replace("/app.html",'');
                 var xx=p.lastIndexOf('/');
                 var app=p.substr(xx+1);
                 appUrl=appUrl.replace(/<%this.app%>/g,app);
             }
             return appUrl;
         }
-        
-        
+
         _fetchSimilarHeaders((heads) => { 
-            if(heads == '') { _importParallel(false); return; }
+            var headAt=Date.now(); // 494 from pi, 53 from PC, 802 from PC with GPRS, 412 with Regular, 270 with Good 2G, 
+            var delay=headAt-_loadStarted;
+            const delayMax=200;
+            if(heads == '' && delay <= delayMax) { _importParallel(false); return; }
             heads=JSON.parse('{"'+heads.toLowerCase().replace(/\\r\n/g,'","').replace(/: /g,'": "')+'":""}');
             var server=heads['server'];
             var speed=server ? parseInt(server.split(' ')[2]) : 1000;
             var isDs=server ? server.indexOf('droidscript-web on ') == 0 : false;
-            if(isDs && speed < 1000) { _importSerial(isDs); }  // Faster on slow servers like NodeJS on Raspberry Pi (sample3 loads avg. 3.9118 sec vs. 6.57 sec)
+            if(isDs && (speed < 1000 || delay > delayMax)) { _importSerial(isDs); }  // Faster on slow servers like NodeJS on Raspberry Pi (sample3 loads avg. 3.9118 sec vs. 6.57 sec)
             else { _importParallel(isDs); } // Faster on Desktop PC (sample3 loads avg 0.8354 sec vs. 0.985 sec) 
         });
     

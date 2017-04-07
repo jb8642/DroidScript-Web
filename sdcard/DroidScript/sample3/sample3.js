@@ -1,4 +1,4 @@
-
+var old=null;
 //Called when application is started.
 function OnStart()
 {    
@@ -6,6 +6,10 @@ function OnStart()
 }
 
 function OnConfig() {
+    if(old) {
+        app.DestroyLayout(old);
+        old=null;
+    }
     var scroll = app.CreateScroller( 1, 1 );
     //scroll.SetBackColor( "White" );
     
@@ -110,6 +114,7 @@ function OnConfig() {
     lay.AddChild( lst );
 
 	scroll.AddChild( lay );
+    old=scroll;
 	app.AddLayout( scroll );
 }
 
@@ -154,8 +159,8 @@ function ShowDialog( title, data )
             var tgt="/sdcard/Download";
             dload = app.CreateDownloader(); 
             dload.SetOnComplete( function(evt) {
-                    alert("Downloaded to "+tgt+" "+url);
-                }); 
+                alert("Downloaded to "+tgt+" "+url);
+            }); 
             dload.Download( url, tgt ); 
         }
     });

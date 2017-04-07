@@ -1,4 +1,4 @@
-/*
+/* Browser-based DroidScript implementation
  * Copyright 2017 droidscript.org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -162,6 +162,10 @@ function JQueryMoble()
         return (_retrieveFile(path) !== null);
     };
 
+    this.FileExists = function(path) {
+        return (_retrieveFile(path) !== null);
+    };
+
     this.GetPrivateFolder = function(name) { // NOTE: Creates the folder when called
         // e.g. /data/user/0/com/smartphoneremote.androidscriptfree/app_test
         var uid=0; // FIXME: Need different uid for each website visitor (use cookie/login)
@@ -172,6 +176,16 @@ function JQueryMoble()
         // NOTE: Then we need: Sync files/folders TO server (if permissions allow)
         // NOTE: Private folder and its contents should generally be allowed (excepting bandwidth/resource limits exceeded)
         // NOTE: Constraints per IP and/or cookie / bandwidth usage should be checked first
+    };
+
+    this.StartApp = function( file, options, intent ) {
+        console.log('StartApp: file='+file+',options='+options+',intent='+intent);
+        if(intent) { intent=JSON.parse(intent); }
+        else intent={}; 
+        if(intent.action === 'android.intent.action.VIEW') {
+            var url=file.replace("/sdcard/DroidScript/","/app/").replace(/[_\-a-zA-Z0-9][_\-a-zA-Z0-9]*.js/,'');
+            document.location=url;
+        }
     };
 
     this.SetMenu = function( list, iconPath ) {
@@ -717,7 +731,7 @@ function JQueryMobile_Lst(list, width, height, options)
 		lst.list = list;
 		lst.empty();
 
-		var items = list.split(delim);
+		var items = Array.isArray(list) ? list : list.split(delim);
 		for(var i = 0; i < items.length; ++i)
 		{
 			var itemData = { title: "", body: "", icon: "", data: null };
@@ -1526,8 +1540,7 @@ function _initWebSock() {
     };
     
     client.onopen = function() {
-        var e=(Date.now()-_loadStarted)/1000;
-        console.log("load4: "+e+"; WebSocket Client Connected");
+        _loadProgress(97+': WebSocket Connected', 'Synchronizing...');
         if (client.readyState === client.OPEN) {
         }
     };
@@ -1575,13 +1588,7 @@ function _initWebSock() {
                     console.log("SERVER ERROR: "+msg.err); 
                     client.send(JSON.stringify({"type":"sync"})); // Continue sync from server
                 }
-                if(!_started && typeof OnStart === 'function') { 
-                    _started=true; 
-                    var _loader=document.getElementById("_loader");
-                    console.log("_loader="+_loader);
-                    if(_loader) { _loader.style.display='none'; }
-                    OnStart();
-                }
+                if(!_started) { _initApp(); }
             }
         }
         else {
@@ -1589,6 +1596,15 @@ function _initWebSock() {
             window.teste=e;
         }
     };
+}
+
+function _initApp() {
+    _started=true; 
+    if(typeof OnStart === 'function') { 
+        _loadProgress(98);
+        OnStart();
+        _loadProgress(99);
+    }
 }
 
 function _Sync(msg) { // Sync with null msg when client file changes (write/metadata)
@@ -1781,11 +1797,12 @@ function _asyncBlobToString(blob, done) {
     reader.readAsText(blob);   
 }
 
-function _init() {
+function _init(isDs) {
     _h = $(window).height();
     _w = $(window).width();
     
-    _initWebSock();
+    if(isDs) { _initWebSock(); }
+    else { _initApp(); }
 //     if(dirTree && dirTree != '') {
 //         alert('dirTree='+dirTree);
 //         dirTree=JSON.parse(dirTree);
