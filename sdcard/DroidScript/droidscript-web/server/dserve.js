@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /* dserve: DroidScript-web http server
  * Copyright 2017 droidscript.org
  *
@@ -31,29 +32,24 @@ const qs = require('querystring');
 const zlib = require('zlib');
 const os = require('os');
 
-var AppRoot=fsp.join(process.cwd(), "DroidScript-Web");
-var DSub=fsp.join("sdcard", "DroidScript");
-var WebRoot=fsp.join(AppRoot, DSub, "droidscript-web", "html");
-var LocalNet='',LocalIP='';
-var options={
-    port:81,
-    sport:444,
-//    passphrase: '',
-    key: fs.readFileSync('ssl/cert.key'),
-    cert: fs.readFileSync('ssl/cert.pem'),
-    ca: fs.readFileSync('ssl/ca.pem'),
-    username:{admin:'admin'},
-    password:{admin:'***REMOVED***'},
-    realm:{admin:'WiFi Administration'}
-};
-
+const _blacklist=["/sdcard/DroidScript/droidscript-web"]; // Ban app write access
 const _CPU0=os.cpus()[0]
 // _SERVER e.g. 'DroidScript-Web on 700Mhz ARMv6-compatible processor rev 7 (v6l)'
 const _SERVER='DroidScript-Web on '+_CPU0.speed+'Mhz '+_CPU0.model;
 
-httpserv(options);
+var AppRoot=fsp.dirname(fsp.dirname(fsp.dirname(fsp.dirname(fsp.dirname(process.argv[1])))));
+var DSub=fsp.join("sdcard", "DroidScript");
+var WebRoot=fsp.join(AppRoot, DSub, "droidscript-web", "html");
+var LocalNet='',LocalIP='';
+var options={
+    port:8081,
+    sport:8444,
+    username:{admin:'admin'},
+    password:{admin:'changeme'}, // FIXME: Usernames/passwords should be stored in a separate database, or better yet, rely on Google/OAuth
+    realm:{admin:'WiFi Administration'}
+};
 
-const _blacklist=["/sdcard/DroidScript/droidscript-web"]; // Ban app write access
+httpserv(options);
 
 function httpserv(options) {
     process.on('message', handleMessage);
@@ -67,11 +63,24 @@ function httpserv(options) {
             break;
         }
     }
-    const httpsServer = require('https').createServer(options, httpsHandler);
+    var serr=null;
+    try {
+        // options.passphrase = '';
+        options.key  = fs.readFileSync('ssl/cert.key');
+        options.cert = fs.readFileSync('ssl/cert.pem');
+        options.ca   = fs.readFileSync('ssl/ca.pem');
+        const httpsServer = require('https').createServer(options, httpsHandler);
+        httpsServer.listen(options.sport);
+    }
+    catch(e) {
+        options.key=options.cert=options.ca=null;
+        serr=e.message;
+    }
     server.listen(options.port, function() {
-        console.info("DroidScript server is listening on "+ips.join(";")+" port "+options.port+" and HTTPS port "+options.sport); 
+        console.info("DroidScript server is listening on "+ips.join(";")+" port "+options.port+ 
+            (!serr ? " and HTTPS port "+options.sport : ".  HTTPS disabled ("+serr+")")); 
+        console.info("AppRoot: "+AppRoot);
     });
-    httpsServer.listen(options.sport);
     wsserv(server);
 }
 

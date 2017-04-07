@@ -1,9 +1,12 @@
-#!/bin/sh
+#!/bin/bash
 
-APP="/home/pi/DroidScript-Web/sdcard/DroidScript/droidscript-web/server/dserve.js"
+CMD=$0
+[ "${CMD:0:1}" != "/" ] && CMD="$PWD/$CMD"
+APP=$(dirname "$CMD")
+APP="$APP/sdcard/DroidScript/droidscript-web/server/dserve.js"
 
 main() {
-        cd /home/pi # Share node_modules with other node apps
+        cd "$HOME" # Share node_modules with other node apps
 
 	# Below, choose correct binary modules for our architecture
         v=$(uname -m)
@@ -14,14 +17,18 @@ main() {
                         ln linux-arm-48_fibers.node "$dir/fibers.node"
                 fi
                 /home/pi/node-armv6l "$APP"
-        else # armv7l
+        elif [ "$v" = "armv7l" ]; then
                 dir="node_modules/fibers/bin/linux-arm-51"
                 if [ ! -d "$dir" -a -f linux-arm-51_fibers.node ]; then
                         mkdir -p "$dir"
                         ln linux-arm-51_fibers.node "$dir/fibers.node"
                 fi
                 node "$APP"
+        else
+                node "$APP"
         fi
 }
 
+clear
+echo "Starting $APP..."
 main
