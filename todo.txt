@@ -1,4 +1,4 @@
-1. Fix list colors, font sizes (_index for example)
-2. Get <BACK> menu to work.
-3. Add <MENU> button ||| to do the same thing as <BACK> menu on browsers that may block <BACK>
-4. Implement filesystem sync TO server.
+* Fix list colors, font sizes (_index for example)
+* Get <BACK> menu to work.
+* Add <MENU> button ||| to do the same thing as <BACK> menu on browsers that may block <BACK>
+* Implement filesystem sync TO server.
