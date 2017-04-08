@@ -32,7 +32,7 @@ const qs = require('querystring');
 const zlib = require('zlib');
 const os = require('os');
 
-const _blacklist=["/dstart","/LICENSE","/README.md","/updev.sh","/sdcard/DroidScript/droidscript-web"]; // Ban app write access and don't list in directory
+const _blacklist=["/dstart","/LICENSE","/README.md","/updev.sh","/todo.txt","/sdcard/DroidScript/droidscript-web"]; // Ban app write access and don't list in directory
 const _CPU0=os.cpus()[0]
 // _SERVER e.g. 'DroidScript-Web on 700Mhz ARMv6-compatible processor rev 7 (v6l)'
 const _SERVER='DroidScript-Web on '+_CPU0.speed+'Mhz '+_CPU0.model;
