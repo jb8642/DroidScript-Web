@@ -32,7 +32,7 @@ const qs = require('querystring');
 const zlib = require('zlib');
 const os = require('os');
 
-const _blacklist=["/sdcard/DroidScript/droidscript-web"]; // Ban app write access
+const _blacklist=["/dstart","/LICENSE","/README.md","/updev.sh","/sdcard/DroidScript/droidscript-web"]; // Ban app write access and don't list in directory
 const _CPU0=os.cpus()[0]
 // _SERVER e.g. 'DroidScript-Web on 700Mhz ARMv6-compatible processor rev 7 (v6l)'
 const _SERVER='DroidScript-Web on '+_CPU0.speed+'Mhz '+_CPU0.model;
@@ -331,7 +331,7 @@ function sendDirFile(request, response, cookies, sub) {
     var path=normalizePath(sub);
     for(var xa=0; xa<_blacklist.length; xa++) {
         var skip=fsp.join(AppRoot, _blacklist[xa]);
-        if(skip === path) {
+        if(skip === path || sub[0] == '.') { // Ignore blacklist and hidden files
             dologs(request);
             return respond(8.1,response, cookies, 403, "text/plain", null, "Forbidden");
         }
@@ -533,7 +533,14 @@ function sync(conn) {
         var lastModified=Math.max(stat.mtime.getTime(), stat.ctime.getTime());
         if (stat.isDirectory()) {            
             fs.readdir(path, (err, list) => {
-                list.forEach((v) => { conn.q.push(fsp.join(elem,v))}); // Queue files
+                list.forEach((v) => {
+                    var sub=fsp.join(elem,v);
+                    for(var xa=0; xa<_blacklist.length; xa++) {
+                        var skip=_blacklist[xa];
+                        if(skip === sub || sub.indexOf('/.') === 0) { return; } // Ignore blacklist and hidden files
+                    }
+                    conn.q.push(sub);
+                }); // Queue files
                 conn.sendUTF(JSON.stringify({"type":"sync", lastModified:lastModified, path:elem, data:null, ctype:"inode/directory"})); // Sync directory to client
             });
             dologs(conn); conn.out='';

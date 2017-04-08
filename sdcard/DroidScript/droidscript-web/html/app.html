@@ -143,7 +143,8 @@
         _fetchSimilarHeaders((heads) => { 
             var headAt=Date.now(); // 494 from pi, 53 from PC, 802 from PC with GPRS, 412 with Regular, 270 with Good 2G, 
             var delay=headAt-_loadStarted;
-            const delayMax=200;
+            const delayMax=200; // NOTE: Slow connections load using _importSerial for better user feedback, though it will likely take longer
+            console.log("delay="+delay+"; delayMax="+delayMax);
             if(heads == '' && delay <= delayMax) { _importParallel(false); return; }
             heads=JSON.parse('{"'+heads.toLowerCase().replace(/\\r\n/g,'","').replace(/: /g,'": "')+'":""}');
             var server=heads['server'];

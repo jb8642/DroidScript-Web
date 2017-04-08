@@ -172,8 +172,7 @@ function JQueryMoble()
         var path="/data/user/"+uid+"/com/smartphoneremote.androidscriptfree/app_"+name;
         this.MakeFolder(path);
         return path;
-        // NOTE: Need: app.MakeFolder (created using _files, localStorage and Chrome File API)
-        // NOTE: Then we need: Sync files/folders TO server (if permissions allow)
+        // NOTE: Need: Sync files/folders TO server (if permissions allow)
         // NOTE: Private folder and its contents should generally be allowed (excepting bandwidth/resource limits exceeded)
         // NOTE: Constraints per IP and/or cookie / bandwidth usage should be checked first
     };
@@ -1640,9 +1639,10 @@ function _storeFile(obj, data, blob) { // Input 'data' must be as a data URI
         else { console.error("ERROR: Parent of '"+obj.path+"' is type '"+file.type+"'"); }
     }
 console.log("STORING "+id);
-    localStorage[id] = JSON.stringify({path:obj.path, lastModified:obj.lastModified, type:obj.ctype, length:blob.length, data:data});
-     var file = _blobToFile(blob, obj.path, obj.lastModified);
-     file.data=data;
+    try { localStorage[id] = JSON.stringify({path:obj.path, lastModified:obj.lastModified, type:obj.ctype, length:blob.length, data:data}); }
+    catch(e) { alert('Local Storage error: '+e.message); }
+    var file = _blobToFile(blob, obj.path, obj.lastModified);
+    file.data=data;
     _files[id] = file;
 }
 
