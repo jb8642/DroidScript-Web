@@ -31,10 +31,19 @@ function OnConfig() {
     }).map(function(item){        
         var icon='../'+item+'/Img/'+item+'.png';
         if(!app.FileExists(icon)) { icon='Img/Pillar.png'; }
-        return item+':'+icon;
+        return "header:"+item+':'+icon;
     });
+
+    lst = app.CreateList( "", 0.8, -1 , "WhiteGrad,Expand,Menu");
+	lst.SetTextColor2("#FF0000AA");
+	lst.SetList(list);
+    lst.SetTextColor( "#ff666666" );
+    lst.SetBackColor( "#ffffffff" );
+    lst.SetTextSize1(18.5);
+    lst.SetTextSize2(14.5);
     
-    lst = app.CreateList( list, 0.8, -1, "Menu,Expand"); //,cards:2x3" );
+    //lst = app.CreateList( list, 0.8, -1, "Menu,Expand"); //,cards:2x3" );
+    
 	lst.SetOnTouch( RunApp );
     lay.AddChild( lst );
     

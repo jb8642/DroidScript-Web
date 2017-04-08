@@ -710,6 +710,7 @@ function JQueryMobile_Lst(list, width, height, options)
 	var useCards = options.indexOf("cards")>-1;
 	var cards2 = options.indexOf("cards2")>-1;
 	var cards2x3 = options.indexOf("cards:2x3")>-1;
+    var menu = options.indexOf("menu")>-1;
 	var horiz = options.indexOf("horiz")>-1;
 	var w=250, h=187;
 	if( cards2 ) { w=350; h=262; } else if( cards2x3 ) { w=200; h=300; } 
@@ -797,9 +798,10 @@ function JQueryMobile_Lst(list, width, height, options)
 				if( !cards2 ) itemContent.append("<h1 style='width:"+(w-20)+"px'>" + itemData.title + "</h1>");
 			}
 			else { 
-				var title = $("<h2 class='horizontal-child-vcenter'>" + itemData.title + "</h2>");
+				var title = $("<h2 class='horizontal-child-vcenter' style='text-align:left'>" + itemData.title + "</h2>");
 				title.css( "text-shadow", "0px 0px 0px black" );
 				itemContent.append( title );
+                if(!menu) { itemContent.append($("<br />")); }
 			}
 			
 			if(itemData.body !== "" && !cards2 ) {
